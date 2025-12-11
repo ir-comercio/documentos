@@ -219,7 +219,9 @@ function renderItems(items) {
             row.innerHTML = `
                 <td>
                     <div class="file-icon-cell">
-                        <span class="icon">📁</span>
+                        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                        </svg>
                         <span class="file-name">${item.name}</span>
                     </div>
                 </td>
@@ -239,14 +241,19 @@ function renderItems(items) {
             });
         } else {
             const fileExtension = item.name.split('.').pop().toUpperCase();
-            const fileIcon = getFileIcon(fileExtension);
             const fileSize = formatFileSize(item.size);
             const mimeType = getMimeTypeDescription(item.mimetype);
+            
+            // Ícone SVG baseado no tipo
+            let svgIcon = `<svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>`;
             
             row.innerHTML = `
                 <td>
                     <div class="file-icon-cell">
-                        <span class="icon">${fileIcon}</span>
+                        ${svgIcon}
                         <span class="file-name">${item.name}</span>
                     </div>
                 </td>
@@ -325,21 +332,8 @@ function renderItems(items) {
 }
 
 function getFileIcon(extension) {
-    const icons = {
-        'PDF': '📕',
-        'DOC': '📘',
-        'DOCX': '📘',
-        'XLS': '📗',
-        'XLSX': '📗',
-        'XML': '📋',
-        'TXT': '📄',
-        'JPG': '🖼️',
-        'JPEG': '🖼️',
-        'PNG': '🖼️',
-        'ZIP': '📦',
-        'RAR': '📦'
-    };
-    return icons[extension] || '📄';
+    // Retorna vazio - ícone será via CSS ou sem ícone
+    return '';
 }
 
 function getMimeTypeDescription(mimetype) {
@@ -459,10 +453,12 @@ function renderSearchResults(results) {
             row.innerHTML = `
                 <td>
                     <div class="file-icon-cell">
-                        <span class="icon">📁</span>
+                        <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                        </svg>
                         <div>
                             <div class="file-name">${item.name}</div>
-                            <div class="file-date" style="font-size: 0.75rem;">📂 ${item.displayPath || '/'}</div>
+                            <div class="file-date" style="font-size: 0.75rem;">${item.displayPath || '/'}</div>
                         </div>
                     </div>
                 </td>
@@ -479,17 +475,21 @@ function renderSearchResults(results) {
             });
         } else {
             const fileExtension = item.name.split('.').pop().toUpperCase();
-            const fileIcon = getFileIcon(fileExtension);
             const fileSize = formatFileSize(item.size);
             const mimeType = getMimeTypeDescription(item.mimetype);
+            
+            let svgIcon = `<svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>`;
             
             row.innerHTML = `
                 <td>
                     <div class="file-icon-cell">
-                        <span class="icon">${fileIcon}</span>
+                        ${svgIcon}
                         <div>
                             <div class="file-name">${item.name}</div>
-                            <div class="file-date" style="font-size: 0.75rem;">📂 ${item.displayPath || '/'}</div>
+                            <div class="file-date" style="font-size: 0.75rem;">${item.displayPath || '/'}</div>
                         </div>
                     </div>
                 </td>
@@ -722,7 +722,11 @@ function showContextMenu(event, itemPath, itemName, type) {
     if (type === 'folder') {
         menu.innerHTML = `
             <div class="context-menu-item" onclick="navigateTo('${itemPath}')">
-                <span>📂</span> Abrir
+                <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </span> Abrir
             </div>
             <div class="context-menu-divider"></div>
             <div class="context-menu-item" onclick="showRenameModal('${itemPath}', '${itemName}', 'folder')">
@@ -735,17 +739,38 @@ function showContextMenu(event, itemPath, itemName, type) {
     } else {
         menu.innerHTML = `
             <div class="context-menu-item" onclick="viewFile('${itemPath}', '${itemName}')">
-                <span>👁️</span> Visualizar
+                <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </span> Visualizar
             </div>
             <div class="context-menu-item" onclick="downloadFile('${itemPath}', '${itemName}')">
-                <span>⬇️</span> Baixar
+                <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </span> Baixar
             </div>
             <div class="context-menu-divider"></div>
             <div class="context-menu-item" onclick="showRenameModal('${itemPath}', '${itemName}', 'file')">
-                <span>✏️</span> Renomear
+                <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </span> Renomear
             </div>
             <div class="context-menu-item danger" onclick="deleteItem('${itemPath}', 'file')">
-                <span>🗑️</span> Excluir
+                <span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </span> Excluir
             </div>
         `;
     }
