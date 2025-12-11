@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splashScreen">
+        <h1 class="splash-title">Documentos</h1>
+    </div>
+
+    <!-- Conteúdo Principal -->
+    <div class="app-content">
+        <div class="container">
+            <div class="header">
+                <h1>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Sistema de Documentos
+                </h1>
+                <div id="connectionStatus" class="connection-status offline">
+                    <span class="status-dot"></span>
+                    <span id="statusText">Offline</span>
+                </div>
+            </div>
+
+            <!-- Navegação de Caminho -->
+            <div class="card">
+                <div class="breadcrumb-container">
+                    <div id="breadcrumb" class="breadcrumb"></div>
+                    <button onclick="goBack()" class="secondary small" id="backBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Voltar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ações -->
+            <div class="card">
+                <div class="actions-bar">
+                    <button onclick="showNewFolderModal()" class="register">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                            <line x1="12" y1="11" x2="12" y2="17"></line>
+                            <line x1="9" y1="14" x2="15" y2="14"></line>
+                        </svg>
+                        Nova Pasta
+                    </button>
+                    <button onclick="document.getElementById('fileInput').click()" class="success">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Upload Arquivo
+                    </button>
+                    <input type="file" id="fileInput" style="display: none;" 
+                           accept=".pdf,.doc,.docx,.xml" 
+                           onchange="handleFileUpload(event)">
+                </div>
+            </div>
+
+            <!-- Filtro de Pesquisa -->
+            <div class="card">
+                <div class="form-group">
+                    <label for="search">Pesquisar:</label>
+                    <input type="text" id="search" placeholder="Nome do arquivo ou pasta..." oninput="filterItems()">
+                </div>
+            </div>
+
+            <!-- Lista de Arquivos e Pastas -->
+            <div class="card">
+                <div id="filesContainer">
+                    <div class="loading">Carregando...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Área de Drop para Upload -->
+    <div id="dropZone" class="drop-zone hidden">
+        <div class="drop-content">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <h2>Solte os arquivos aqui</h2>
+            <p>PDF, Word ou XML</p>
+        </div>
+    </div>
+
+    <script>
+        setTimeout(() => {
+            const splash = document.getElementById('splashScreen');
+            if (splash) splash.style.display = 'none';
+        }, 3000);
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
