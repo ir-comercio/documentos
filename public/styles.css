@@ -99,36 +99,31 @@ h1 {
 .connection-status {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    gap: 0.5rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
     text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--border-color);
 }
 
 .status-dot {
-    width: 12px;
-    height: 12px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
 }
 
 .connection-status.online .status-dot {
     background-color: #00cc77;
-    animation: pulse-online 2s infinite;
 }
 
 .connection-status.offline .status-dot {
     background-color: #e70000;
 }
 
-@keyframes pulse-online {
-    0% { box-shadow: 0 0 0 0 rgba(0, 204, 119, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(0, 204, 119, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(0, 204, 119, 0); }
-}
-
-/* BARRA DE NAVEGAÇÃO - SEM BOX */
+/* BARRA DE NAVEGAÇÃO - TOTALMENTE SEM BOX */
 .navigation-bar {
     display: flex;
     align-items: center;
@@ -136,40 +131,42 @@ h1 {
     margin-bottom: 1.5rem;
     padding: 0;
     background: transparent;
-    border-radius: 0;
     border: none;
 }
 
 .back-btn {
     background: transparent;
-    border: none;
+    border: 1px solid var(--border-color);
     color: var(--text-primary);
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    transition: background 0.2s;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    transition: all 0.2s;
     line-height: 1;
     min-width: auto;
+    font-weight: normal;
 }
 
 .back-btn:hover:not(:disabled) {
-    background: var(--hover-row);
+    background: var(--input-bg);
+    border-color: var(--primary);
 }
 
 .back-btn:disabled {
-    opacity: 0.3;
+    opacity: 0.2;
     cursor: not-allowed;
+    border-color: var(--border-color);
 }
 
-/* BREADCRUMB */
+/* BREADCRUMB - MINIMALISTA */
 .breadcrumb {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
     flex: 1;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
 .breadcrumb-item {
@@ -177,47 +174,52 @@ h1 {
     text-decoration: none;
     transition: color 0.2s;
     cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
     text-transform: uppercase;
+    font-weight: 500;
+    background: transparent;
 }
 
 .breadcrumb-item:hover {
-    color: var(--primary);
-    background: var(--hover-row);
+    color: var(--text-primary);
+    background: var(--input-bg);
 }
 
 .breadcrumb-item.active {
     color: var(--text-primary);
     font-weight: 600;
     cursor: default;
+    background: transparent;
 }
 
 .breadcrumb-separator {
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    opacity: 0.5;
 }
 
-/* PESQUISA */
+/* PESQUISA - MINIMALISTA */
 .search-input {
-    width: 300px;
+    width: 280px;
     padding: 0.5rem 1rem;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     background: var(--input-bg);
     color: var(--text-primary);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     transition: all 0.2s ease;
 }
 
 .search-input:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: var(--text-secondary);
     background: var(--bg-primary);
 }
 
 .search-input::placeholder {
     color: var(--text-secondary);
+    opacity: 0.6;
     text-transform: none;
 }
 
@@ -244,22 +246,23 @@ h1 {
     text-align: left;
     padding: 0.75rem 1rem;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     border-bottom: 1px solid var(--border-color);
+    text-transform: uppercase;
 }
 
 .files-table tbody tr {
     border-bottom: 1px solid var(--border-color);
-    transition: background 0.15s ease;
+    transition: background 0.1s ease;
     cursor: pointer;
 }
 
 .files-table tbody tr:hover {
-    background: var(--hover-row);
+    background: rgba(0, 0, 0, 0.02);
 }
 
 .files-table tbody tr:active {
-    background: rgba(204, 112, 0, 0.1);
+    background: rgba(0, 0, 0, 0.04);
 }
 
 .files-table td {
@@ -274,8 +277,9 @@ h1 {
 }
 
 .file-icon-cell .icon {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     flex-shrink: 0;
+    opacity: 0.6;
 }
 
 .file-name {
@@ -283,6 +287,8 @@ h1 {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-transform: uppercase;
+    font-size: 0.85rem;
 }
 
 .folder-row .icon { color: var(--folder-color); }
@@ -290,7 +296,8 @@ h1 {
 
 .file-date, .file-type, .file-size {
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: 0.82rem;
+    text-transform: uppercase;
 }
 
 /* LOADING E EMPTY */
@@ -330,8 +337,8 @@ button.secondary { background: #4B5563; }
 .floating-btn {
     position: fixed;
     right: 2rem;
-    width: 56px;
-    height: 56px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     color: white;
     border: none;
@@ -339,36 +346,33 @@ button.secondary { background: #4B5563; }
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
+    transition: opacity 0.2s ease;
     z-index: 1000;
     padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .floating-btn:hover {
-    transform: scale(1.1);
+    opacity: 0.85;
 }
 
-.floating-btn:active { transform: scale(0.95); }
-.floating-btn svg { width: 24px; height: 24px; }
+.floating-btn:active { 
+    opacity: 0.7;
+}
+
+.floating-btn svg { 
+    width: 22px; 
+    height: 22px; 
+}
 
 .floating-btn-upload { 
     bottom: 7rem;
-    background: var(--btn-save);
-    box-shadow: 0 4px 12px rgba(0, 204, 119, 0.4);
-}
-
-.floating-btn-upload:hover {
-    box-shadow: 0 6px 20px rgba(0, 204, 119, 0.6);
+    background: #00aa55;
 }
 
 .floating-btn-folder { 
     bottom: 2rem;
-    background: var(--btn-register);
-    box-shadow: 0 4px 12px rgba(0, 119, 199, 0.4);
-}
-
-.floating-btn-folder:hover {
-    box-shadow: 0 6px 20px rgba(0, 119, 199, 0.6);
+    background: #0077c7;
 }
 
 /* TABELA - TEXTO UPPERCASE */
