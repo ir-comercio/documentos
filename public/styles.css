@@ -544,9 +544,52 @@ button.small { padding: 8px 12px; font-size: 0.85rem; }
 
 .hidden { display: none !important; }
 
+/* BOTÕES FLUTUANTES */
+.floating-btn {
+    position: fixed;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--btn-register);
+    color: white;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 119, 199, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    padding: 0;
+}
+
+.floating-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 119, 199, 0.6);
+}
+
+.floating-btn:active {
+    transform: scale(0.95);
+}
+
+.floating-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Posições dos botões */
+.floating-btn-upload {
+    bottom: 9rem; /* Acima do botão de pasta */
+}
+
+.floating-btn-folder {
+    bottom: 2rem; /* Embaixo */
+}
+
 /* RESPONSIVO */
 @media (max-width: 768px) {
-    .container { padding: 0 1rem; margin: 1rem auto; }
+    .container { padding: 0 1rem 5rem 1rem; margin: 1rem auto; } /* Extra padding no bottom */
     .header { flex-direction: column; align-items: flex-start; }
     h1 { font-size: 1.5rem; }
     .splash-title { font-size: 1.3rem; }
@@ -559,4 +602,24 @@ button.small { padding: 8px 12px; font-size: 0.85rem; }
     .item-icon { font-size: 1.8rem; }
     .item-name { font-size: 0.7rem; }
     .item-info { font-size: 0.6rem; }
+    
+    /* Botões flutuantes menores no mobile */
+    .floating-btn {
+        width: 48px;
+        height: 48px;
+        right: 1.5rem;
+    }
+    
+    .floating-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .floating-btn-upload {
+        bottom: 7.5rem;
+    }
+    
+    .floating-btn-folder {
+        bottom: 1.5rem;
+    }
 }
