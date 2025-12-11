@@ -64,7 +64,6 @@ async function checkServerStatus() {
             method: 'GET',
             headers: { 
                 'X-Session-Token': sessionToken,
-                'X-Session-Token': sessionToken,
                 'Accept': 'application/json'
             }
         });
@@ -126,7 +125,6 @@ function updateBreadcrumb() {
         `;
     }).join('');
 
-    // Atualizar botão voltar
     const backBtn = document.getElementById('backBtn');
     if (backBtn) {
         backBtn.disabled = currentPath === 'Documentos/';
@@ -140,7 +138,7 @@ window.navigateTo = function(path) {
 
 window.goBack = function() {
     const parts = currentPath.split('/').filter(Boolean);
-    if (parts.length <= 1) return; // Já está em Documentos/
+    if (parts.length <= 1) return;
     
     parts.pop();
     currentPath = parts.join('/') + '/';
@@ -156,16 +154,14 @@ async function loadCurrentFolder() {
         return;
     }
 
-    const container = document.getElementById('filesContainer');
-    container.innerHTML = '<div class="loading">Carregando...</div>';
+    const tbody = document.getElementById('filesContainer');
+    tbody.innerHTML = '<tr><td colspan="5" class="loading">Carregando...</td></tr>';
 
     try {
         const response = await fetch(`${API_URL}/folders?path=${encodeURIComponent(currentPath)}`, {
             method: 'GET',
-            
             headers: { 
                 'X-Session-Token': sessionToken,
-                
                 'Accept': 'application/json'
             }
         });
@@ -188,51 +184,56 @@ async function loadCurrentFolder() {
     } catch (error) {
         console.error('Erro ao carregar pasta:', error);
         showMessage('Erro ao carregar pasta', 'error');
-        container.innerHTML = '<div class="empty-state">Erro ao carregar conteúdo</div>';
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Erro ao carregar conteúdo</td></tr>';
     }
 }
 
 // ============================================
-// RENDERIZAR ITENS
+// RENDERIZAR ITENS (TABELA)
 // ============================================
 function renderItems(items) {
-    const container = document.getElementById('filesContainer');
+    const tbody = document.getElementById('filesContainer');
     
     if (!items || items.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                </svg>
-                <p>Pasta vazia</p>
-                <p style="font-size: 0.9rem;">Crie uma pasta ou faça upload de arquivos</p>
-            </div>
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="empty-state">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    <p>Pasta vazia</p>
+                    <p style="font-size: 0.9rem;">Crie uma pasta ou faça upload de arquivos</p>
+                </td>
+            </tr>
         `;
         return;
     }
 
-    const grid = document.createElement('div');
-    grid.className = 'files-grid';
+    tbody.innerHTML = '';
 
     items.forEach(item => {
-        const itemDiv = document.createElement('div');
-        itemDiv.className = item.type === 'folder' ? 'folder-item' : 'file-item';
+        const row = document.createElement('tr');
+        row.className = item.type === 'folder' ? 'folder-row' : 'file-row';
         
         if (item.type === 'folder') {
-            itemDiv.innerHTML = `
-                <div class="item-icon">📁</div>
-                <div class="item-name">${item.name}</div>
+            row.innerHTML = `
+                <td>
+                    <div class="file-icon-cell">
+                        <span class="icon">📁</span>
+                        <span class="file-name">${item.name}</span>
+                    </div>
+                </td>
+                <td class="file-date">${formatDate(item.updated_at || item.created_at)}</td>
+                <td class="file-type">Pasta de arquivos</td>
+                <td class="file-size">—</td>
+                <td></td>
             `;
             
-            // Clique simples abre a pasta
-            itemDiv.addEventListener('click', (e) => {
-                if (e.button === 0) {
-                    navigateTo(item.path);
-                }
+            row.addEventListener('click', (e) => {
+                if (e.button === 0) navigateTo(item.path);
             });
             
-            // Menu de contexto (clique direito)
-            itemDiv.addEventListener('contextmenu', (e) => {
+            row.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 showContextMenu(e, item.path, item.name, 'folder');
             });
@@ -240,23 +241,29 @@ function renderItems(items) {
             const fileExtension = item.name.split('.').pop().toUpperCase();
             const fileIcon = getFileIcon(fileExtension);
             const fileSize = formatFileSize(item.size);
+            const mimeType = getMimeTypeDescription(item.mimetype);
             
-            itemDiv.innerHTML = `
-                <div class="item-icon">${fileIcon}</div>
-                <div class="item-name">${item.name}</div>
-                <div class="item-info">${fileExtension} • ${fileSize}</div>
+            row.innerHTML = `
+                <td>
+                    <div class="file-icon-cell">
+                        <span class="icon">${fileIcon}</span>
+                        <span class="file-name">${item.name}</span>
+                    </div>
+                </td>
+                <td class="file-date">${formatDate(item.updated_at || item.created_at)}</td>
+                <td class="file-type">${mimeType}</td>
+                <td class="file-size">${fileSize}</td>
+                <td></td>
             `;
             
-            // Tornar arquivo "arrastável"
-            itemDiv.draggable = true;
-            itemDiv.dataset.filepath = item.path;
-            itemDiv.dataset.filename = item.name;
+            row.draggable = true;
+            row.dataset.filepath = item.path;
+            row.dataset.filename = item.name;
             
-            // Drag start - preparar dados para arrastar
-            itemDiv.addEventListener('dragstart', async (e) => {
+            row.addEventListener('dragstart', async (e) => {
                 e.dataTransfer.effectAllowed = 'copy';
+                row.style.opacity = '0.5';
                 
-                // Obter o arquivo do servidor
                 try {
                     const response = await fetch(`${API_URL}/download?path=${encodeURIComponent(item.path)}`, {
                         headers: { 'X-Session-Token': sessionToken }
@@ -265,8 +272,6 @@ function renderItems(items) {
                     if (response.ok) {
                         const blob = await response.blob();
                         const file = new File([blob], item.name, { type: blob.type });
-                        
-                        // Adicionar arquivo aos dados de transferência
                         e.dataTransfer.items.add(file);
                         e.dataTransfer.setData('text/plain', item.name);
                     }
@@ -275,25 +280,22 @@ function renderItems(items) {
                 }
             });
             
-            // Clique simples abre o arquivo em nova aba
-            itemDiv.addEventListener('click', (e) => {
-                if (e.button === 0) {
-                    viewFile(item.path, item.name);
-                }
+            row.addEventListener('dragend', () => {
+                row.style.opacity = '1';
             });
             
-            // Menu de contexto (clique direito)
-            itemDiv.addEventListener('contextmenu', (e) => {
+            row.addEventListener('click', (e) => {
+                if (e.button === 0) viewFile(item.path, item.name);
+            });
+            
+            row.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 showContextMenu(e, item.path, item.name, 'file');
             });
         }
         
-        grid.appendChild(itemDiv);
+        tbody.appendChild(row);
     });
-
-    container.innerHTML = '';
-    container.appendChild(grid);
 }
 
 function getFileIcon(extension) {
@@ -301,9 +303,45 @@ function getFileIcon(extension) {
         'PDF': '📄',
         'DOC': '📝',
         'DOCX': '📝',
-        'XML': '🔖'
+        'XML': '🔖',
+        'TXT': '📄',
+        'JPG': '🖼️',
+        'JPEG': '🖼️',
+        'PNG': '🖼️'
     };
     return icons[extension] || '📄';
+}
+
+function getMimeTypeDescription(mimetype) {
+    const types = {
+        'application/pdf': 'Documento PDF',
+        'application/msword': 'Documento Word',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Documento Word',
+        'text/xml': 'Documento XML',
+        'application/xml': 'Documento XML',
+        'image/jpeg': 'Imagem JPEG',
+        'image/png': 'Imagem PNG',
+        'text/plain': 'Arquivo de Texto'
+    };
+    return types[mimetype] || 'Arquivo';
+}
+
+function formatDate(dateString) {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days === 0) {
+        return 'Hoje ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } else if (days === 1) {
+        return 'Ontem';
+    } else if (days < 7) {
+        return days + ' dias atrás';
+    } else {
+        return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
 }
 
 function formatFileSize(bytes) {
@@ -322,25 +360,19 @@ let searchTimeout;
 async function filterItems() {
     const searchTerm = document.getElementById('search')?.value.toLowerCase() || '';
     
-    // Limpar timeout anterior
-    if (searchTimeout) {
-        clearTimeout(searchTimeout);
-    }
+    if (searchTimeout) clearTimeout(searchTimeout);
     
-    // Se vazio, mostrar pasta atual
     if (!searchTerm) {
         renderItems(allItems);
         return;
     }
 
-    // Busca local primeiro (mais rápido)
     const localFiltered = allItems.filter(item => 
         item.name.toLowerCase().includes(searchTerm)
     );
     
     renderItems(localFiltered);
 
-    // Se busca tiver 2+ caracteres, fazer busca global no servidor
     if (searchTerm.length >= 2) {
         searchTimeout = setTimeout(async () => {
             try {
@@ -355,7 +387,6 @@ async function filterItems() {
                     const data = await response.json();
                     
                     if (data.results && data.results.length > 0) {
-                        // Adicionar informação da pasta onde está
                         const resultsWithPath = data.results.map(item => ({
                             ...item,
                             displayPath: item.folder.replace('Documentos/', '')
@@ -367,42 +398,52 @@ async function filterItems() {
             } catch (error) {
                 console.error('Erro na busca global:', error);
             }
-        }, 500); // Delay de 500ms
+        }, 500);
     }
 }
 
-// Renderizar resultados de busca com caminho
 function renderSearchResults(results) {
-    const container = document.getElementById('filesContainer');
+    const tbody = document.getElementById('filesContainer');
     
     if (!results || results.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-                <p>Nenhum resultado encontrado</p>
-            </div>
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="empty-state">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <p>Nenhum resultado encontrado</p>
+                </td>
+            </tr>
         `;
         return;
     }
 
-    const grid = document.createElement('div');
-    grid.className = 'files-grid';
+    tbody.innerHTML = '';
 
     results.forEach(item => {
-        const itemDiv = document.createElement('div');
-        itemDiv.className = item.type === 'folder' ? 'folder-item' : 'file-item';
+        const row = document.createElement('tr');
+        row.className = item.type === 'folder' ? 'folder-row' : 'file-row';
         
         if (item.type === 'folder') {
-            itemDiv.innerHTML = `
-                <div class="item-icon">📁</div>
-                <div class="item-name">${item.name}</div>
-                <div class="item-info" style="font-size: 0.7rem; color: var(--text-secondary);">📂 ${item.displayPath || '/'}</div>
+            row.innerHTML = `
+                <td>
+                    <div class="file-icon-cell">
+                        <span class="icon">📁</span>
+                        <div>
+                            <div class="file-name">${item.name}</div>
+                            <div class="file-date" style="font-size: 0.75rem;">📂 ${item.displayPath || '/'}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="file-date">${formatDate(item.updated_at || item.created_at)}</td>
+                <td class="file-type">Pasta de arquivos</td>
+                <td class="file-size">—</td>
+                <td></td>
             `;
             
-            itemDiv.addEventListener('click', () => navigateTo(item.path));
-            itemDiv.addEventListener('contextmenu', (e) => {
+            row.addEventListener('click', () => navigateTo(item.path));
+            row.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 showContextMenu(e, item.path, item.name, 'folder');
             });
@@ -410,20 +451,31 @@ function renderSearchResults(results) {
             const fileExtension = item.name.split('.').pop().toUpperCase();
             const fileIcon = getFileIcon(fileExtension);
             const fileSize = formatFileSize(item.size);
+            const mimeType = getMimeTypeDescription(item.mimetype);
             
-            itemDiv.innerHTML = `
-                <div class="item-icon">${fileIcon}</div>
-                <div class="item-name">${item.name}</div>
-                <div class="item-info">${fileExtension} • ${fileSize}</div>
-                <div class="item-info" style="font-size: 0.65rem; color: var(--text-secondary);">📂 ${item.displayPath || '/'}</div>
+            row.innerHTML = `
+                <td>
+                    <div class="file-icon-cell">
+                        <span class="icon">${fileIcon}</span>
+                        <div>
+                            <div class="file-name">${item.name}</div>
+                            <div class="file-date" style="font-size: 0.75rem;">📂 ${item.displayPath || '/'}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="file-date">${formatDate(item.updated_at || item.created_at)}</td>
+                <td class="file-type">${mimeType}</td>
+                <td class="file-size">${fileSize}</td>
+                <td></td>
             `;
             
-            itemDiv.draggable = true;
-            itemDiv.dataset.filepath = item.path;
-            itemDiv.dataset.filename = item.name;
+            row.draggable = true;
+            row.dataset.filepath = item.path;
+            row.dataset.filename = item.name;
             
-            itemDiv.addEventListener('dragstart', async (e) => {
+            row.addEventListener('dragstart', async (e) => {
                 e.dataTransfer.effectAllowed = 'copy';
+                row.style.opacity = '0.5';
                 try {
                     const response = await fetch(`${API_URL}/download?path=${encodeURIComponent(item.path)}`, {
                         headers: { 'X-Session-Token': sessionToken }
@@ -439,18 +491,16 @@ function renderSearchResults(results) {
                 }
             });
             
-            itemDiv.addEventListener('click', () => viewFile(item.path, item.name));
-            itemDiv.addEventListener('contextmenu', (e) => {
+            row.addEventListener('dragend', () => { row.style.opacity = '1'; });
+            row.addEventListener('click', () => viewFile(item.path, item.name));
+            row.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 showContextMenu(e, item.path, item.name, 'file');
             });
         }
         
-        grid.appendChild(itemDiv);
+        tbody.appendChild(row);
     });
-
-    container.innerHTML = '';
-    container.appendChild(grid);
 }
 
 // ============================================
@@ -493,11 +543,9 @@ async function createFolder(event) {
     try {
         const response = await fetch(`${API_URL}/folders`, {
             method: 'POST',
-            
             headers: {
-                'X-Session-Token': sessionToken,
                 'Content-Type': 'application/json',
-                
+                'X-Session-Token': sessionToken
             },
             body: JSON.stringify({
                 path: currentPath,
@@ -531,7 +579,7 @@ async function handleFileUpload(event) {
     if (!file) return;
 
     await uploadFile(file);
-    event.target.value = ''; // Limpar input
+    event.target.value = '';
 }
 
 async function uploadFile(file) {
@@ -544,10 +592,8 @@ async function uploadFile(file) {
 
         const response = await fetch(`${API_URL}/upload`, {
             method: 'POST',
-            
             headers: {
-                'X-Session-Token': sessionToken,
-                
+                'X-Session-Token': sessionToken
             },
             body: formData
         });
@@ -605,25 +651,17 @@ function setupDragAndDrop() {
         setTimeout(() => dropZone.classList.add('hidden'), 300);
 
         const files = Array.from(e.dataTransfer.files);
-        const allowedTypes = ['application/pdf', 'application/msword', 
-                             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                             'text/xml', 'application/xml'];
 
         for (const file of files) {
-            if (allowedTypes.includes(file.type)) {
-                await uploadFile(file);
-            } else {
-                showMessage(`Arquivo ${file.name} não é permitido. Use PDF, Word ou XML.`, 'error');
-            }
+            await uploadFile(file);
         }
     });
 }
 
 // ============================================
-// MENU DE CONTEXTO (CLIQUE DIREITO)
+// MENU DE CONTEXTO
 // ============================================
 function showContextMenu(event, itemPath, itemName, type) {
-    // Remover menu anterior se existir
     const oldMenu = document.getElementById('contextMenu');
     if (oldMenu) oldMenu.remove();
 
@@ -664,7 +702,6 @@ function showContextMenu(event, itemPath, itemName, type) {
 
     document.body.appendChild(menu);
 
-    // Posicionar menu
     const x = event.clientX;
     const y = event.clientY;
     const menuWidth = 200;
@@ -672,7 +709,6 @@ function showContextMenu(event, itemPath, itemName, type) {
     const windowWidth = window.innerWidth;
     const windowHeight = window.innerHeight;
 
-    // Ajustar posição se sair da tela
     const posX = (x + menuWidth > windowWidth) ? windowWidth - menuWidth - 10 : x;
     const posY = (y + menuHeight > windowHeight) ? windowHeight - menuHeight - 10 : y;
 
@@ -680,7 +716,6 @@ function showContextMenu(event, itemPath, itemName, type) {
     menu.style.top = posY + 'px';
     menu.style.display = 'block';
 
-    // Fechar menu ao clicar fora
     setTimeout(() => {
         document.addEventListener('click', closeContextMenu);
     }, 10);
@@ -703,11 +738,7 @@ window.viewFile = async function(filePath, fileName) {
     try {
         const response = await fetch(`${API_URL}/download?path=${encodeURIComponent(filePath)}`, {
             method: 'GET',
-            
-            headers: {
-                'X-Session-Token': sessionToken,
-                
-            }
+            headers: { 'X-Session-Token': sessionToken }
         });
 
         if (!response.ok) {
@@ -717,10 +748,8 @@ window.viewFile = async function(filePath, fileName) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         
-        // Abrir em nova aba
         window.open(url, '_blank');
         
-        // Liberar URL após um tempo
         setTimeout(() => window.URL.revokeObjectURL(url), 60000);
         
     } catch (error) {
@@ -740,11 +769,7 @@ window.downloadFile = async function(filePath, fileName) {
 
         const response = await fetch(`${API_URL}/download?path=${encodeURIComponent(filePath)}`, {
             method: 'GET',
-            
-            headers: {
-                'X-Session-Token': sessionToken,
-                
-            }
+            headers: { 'X-Session-Token': sessionToken }
         });
 
         if (!response.ok) {
@@ -796,7 +821,6 @@ window.showRenameModal = function(itemPath, currentName, type) {
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
     
-    // Selecionar nome sem extensão
     setTimeout(() => {
         const input = document.getElementById('newName');
         const lastDot = currentName.lastIndexOf('.');
@@ -821,11 +845,9 @@ async function renameItem(event, oldPath, type) {
     try {
         const response = await fetch(`${API_URL}/rename`, {
             method: 'PUT',
-            
             headers: {
-                'X-Session-Token': sessionToken,
                 'Content-Type': 'application/json',
-                
+                'X-Session-Token': sessionToken
             },
             body: JSON.stringify({
                 oldPath: oldPath,
@@ -854,7 +876,7 @@ window.deleteItem = async function(itemPath, type) {
     closeContextMenu();
     
     const confirmed = await showConfirm(
-        `Tem certeza que deseja excluir este ${type === 'folder' ? 'pasta e todo seu conteúdo' : 'arquivo'}?`,
+        `Tem certeza que deseja excluir ${type === 'folder' ? 'esta pasta e todo seu conteúdo' : 'este arquivo'}?`,
         {
             title: 'Confirmar Exclusão',
             confirmText: 'Excluir',
@@ -868,11 +890,7 @@ window.deleteItem = async function(itemPath, type) {
     try {
         const response = await fetch(`${API_URL}/delete?path=${encodeURIComponent(itemPath)}&type=${type}`, {
             method: 'DELETE',
-            
-            headers: {
-                'X-Session-Token': sessionToken,
-                
-            }
+            headers: { 'X-Session-Token': sessionToken }
         });
 
         if (!response.ok) {
