@@ -277,9 +277,9 @@ h1 {
 }
 
 .file-icon-cell .icon {
-    font-size: 1.2rem;
     flex-shrink: 0;
-    opacity: 0.6;
+    opacity: 0.7;
+    color: var(--text-secondary);
 }
 
 .file-name {
@@ -291,8 +291,15 @@ h1 {
     font-size: 0.85rem;
 }
 
-.folder-row .icon { color: var(--folder-color); }
-.file-row .icon { color: var(--file-color); }
+.folder-row .icon { 
+    color: var(--folder-color); 
+    opacity: 0.8;
+}
+
+.file-row .icon { 
+    color: var(--file-color);
+    opacity: 0.6;
+}
 
 .file-date, .file-type, .file-size {
     color: var(--text-secondary);
@@ -455,6 +462,18 @@ button.secondary { background: #4B5563; }
     transition: background 0.2s;
 }
 
+.context-menu-item span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+}
+
+.context-menu-item svg {
+    opacity: 0.7;
+}
+
 .context-menu-item:hover {
     background: rgba(204, 112, 0, 0.1);
 }
@@ -462,6 +481,10 @@ button.secondary { background: #4B5563; }
 .context-menu-item.danger:hover {
     background: rgba(231, 0, 0, 0.1);
     color: var(--btn-delete);
+}
+
+.context-menu-item.danger:hover svg {
+    stroke: var(--btn-delete);
 }
 
 .context-menu-divider {
