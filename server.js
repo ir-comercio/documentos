@@ -130,6 +130,7 @@ app.post('/webhook/drive', express.raw({ type: 'application/json' }), async (req
     }
 });
 
+app.use('/api', verificarAutenticacao, verificarGoogleDrive);
 // ==========================================
 // ROTAS DE AUTENTICAÇÃO GOOGLE
 // ==========================================
@@ -287,7 +288,6 @@ app.get('/health', async (req, res) => {
 // ==========================================
 // API
 // ==========================================
-app.use('/api', verificarAutenticacao);
 
 // Listar pasta (COM LINKS OTIMIZADOS) - CORRIGIDO PARA GET
 app.get('/api/folders', verificarAutenticacao, verificarGoogleDrive, async (req, res) => {
@@ -384,7 +384,7 @@ app.get('/api/search', verificarAutenticacao, async (req, res) => {
 });
 
 // Criar pasta
-app.post('/api/folders', verificarAutenticacao, verificarGoogleDrive, async (req, res) => {
+ app.post('/api/folders/create', verificarAutenticacao, verificarGoogleDrive, async (req, res) => {
     try {
         const { path: parentPath, name } = req.body;
         
