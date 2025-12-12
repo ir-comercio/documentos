@@ -6,7 +6,7 @@ const PORTAL_URL = 'https://ir-comercio-portal-zcan.onrender.com';
 
 let currentPath = 'Documentos/';
 let allItems = [];
-let isOnline = false;
+let isOnline = true; // COMEÇA COMO ONLINE
 let sessionToken = null;
 
 // Cache para melhorar performance
@@ -225,7 +225,8 @@ function renderItems(items) {
         return;
     }
 
-    tbody.innerHTML = '';
+    // OTIMIZAÇÃO: Usar DocumentFragment para renderização mais rápida
+    const fragment = document.createDocumentFragment();
 
     items.forEach(item => {
         const row = document.createElement('tr');
@@ -343,8 +344,12 @@ function renderItems(items) {
             });
         }
         
-        tbody.appendChild(row);
+        fragment.appendChild(row);
     });
+
+    // OTIMIZAÇÃO: Uma única operação DOM
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
 }
 
 function getFileIcon(extension) {
@@ -412,9 +417,10 @@ async function filterItems() {
         item.name.toLowerCase().includes(searchTerm)
     );
     
+    // Renderização imediata
     renderItems(localFiltered);
 
-    // Busca global apenas com 3+ caracteres e após 800ms
+    // Busca global apenas com 3+ caracteres e após 300ms (era 800ms)
     if (searchTerm.length >= 3) {
         searchTimeout = setTimeout(async () => {
             try {
@@ -440,7 +446,7 @@ async function filterItems() {
             } catch (error) {
                 console.error('Erro na busca global:', error);
             }
-        }, 800); // 800ms em vez de 500ms
+        }, 300); // 300ms em vez de 800ms - MUITO MAIS RÁPIDO
     }
 }
 
