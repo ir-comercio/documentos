@@ -1,12 +1,14 @@
-// script-extensions.js - Extensões para ZIP e Links Otimizados
-// ADICIONE ESTE CÓDIGO AO FINAL DO SEU script.js EXISTENTE
+// script-extensions.js - VERSÃO SIMPLIFICADA
+// Adiciona recursos de ZIP e links sem modificar renderItems original
+
+console.log('🔌 Carregando extensões...');
 
 // ============================================
 // SELEÇÃO MÚLTIPLA DE ARQUIVOS
 // ============================================
 let selectedFiles = new Set();
 
-function toggleFileSelection(fileId, event) {
+window.toggleFileSelection = function(fileId, event) {
     event.stopPropagation();
     
     if (selectedFiles.has(fileId)) {
@@ -17,15 +19,22 @@ function toggleFileSelection(fileId, event) {
     
     updateSelectionUI();
     updateZipButton();
-}
+};
 
 function updateSelectionUI() {
     document.querySelectorAll('.file-item').forEach(item => {
-        const fileId = item.dataset.fileId;
+        const checkbox = item.querySelector('.file-checkbox');
+        if (!checkbox) return;
+        
+        const fileId = checkbox.dataset.fileId;
         if (selectedFiles.has(fileId)) {
-            item.classList.add('selected');
+            item.style.background = 'rgba(0, 123, 255, 0.1)';
+            item.style.borderLeft = '3px solid var(--btn-primary)';
+            checkbox.checked = true;
         } else {
-            item.classList.remove('selected');
+            item.style.background = '';
+            item.style.borderLeft = '';
+            checkbox.checked = false;
         }
     });
 }
@@ -36,7 +45,8 @@ function updateZipButton() {
     
     if (selectedFiles.size > 0) {
         zipBtn.style.display = 'flex';
-        zipBtn.querySelector('.badge').textContent = selectedFiles.size;
+        const badge = zipBtn.querySelector('.badge');
+        if (badge) badge.textContent = selectedFiles.size;
     } else {
         zipBtn.style.display = 'none';
     }
@@ -51,9 +61,9 @@ function clearSelection() {
 // ============================================
 // CRIAR ZIP DE ARQUIVOS SELECIONADOS
 // ============================================
-async function zipSelectedFiles() {
+window.zipSelectedFiles = async function() {
     if (selectedFiles.size === 0) {
-        mostrarNotificacao('Selecione arquivos para zipar', 'warning');
+        alert('Selecione arquivos para zipar');
         return;
     }
     
@@ -61,7 +71,10 @@ async function zipSelectedFiles() {
     if (!zipName) return;
     
     try {
-        mostrarNotificacao(`Criando ZIP com ${selectedFiles.size} arquivos...`, 'info');
+        console.log(`📦 Criando ZIP com ${selectedFiles.size} arquivos...`);
+        
+        const API_URL = window.location.origin + '/api';
+        const sessionToken = sessionStorage.getItem('documentosSession');
         
         const response = await fetch(`${API_URL}/zip/files`, {
             method: 'POST',
@@ -77,7 +90,6 @@ async function zipSelectedFiles() {
         
         if (!response.ok) throw new Error('Erro ao criar ZIP');
         
-        // Download do ZIP
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -88,23 +100,26 @@ async function zipSelectedFiles() {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         
-        mostrarNotificacao('ZIP criado com sucesso!', 'success');
+        console.log('✅ ZIP criado!');
         clearSelection();
         
     } catch (error) {
-        console.error('Erro ao criar ZIP:', error);
-        mostrarNotificacao('Erro ao criar ZIP', 'error');
+        console.error('❌ Erro ao criar ZIP:', error);
+        alert('Erro ao criar ZIP: ' + error.message);
     }
-}
+};
 
 // ============================================
 // CRIAR ZIP DE PASTA
 // ============================================
-async function zipFolder(folderId, folderName) {
+window.zipFolder = async function(folderId, folderName) {
     if (!confirm(`Deseja zipar toda a pasta "${folderName}"?`)) return;
     
     try {
-        mostrarNotificacao(`Criando ZIP da pasta ${folderName}...`, 'info');
+        console.log(`📦 Criando ZIP da pasta ${folderName}...`);
+        
+        const API_URL = window.location.origin + '/api';
+        const sessionToken = sessionStorage.getItem('documentosSession');
         
         const response = await fetch(`${API_URL}/zip/folder`, {
             method: 'POST',
@@ -130,156 +145,102 @@ async function zipFolder(folderId, folderName) {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         
-        mostrarNotificacao('ZIP da pasta criado com sucesso!', 'success');
+        console.log('✅ ZIP da pasta criado!');
         
     } catch (error) {
-        console.error('Erro ao criar ZIP:', error);
-        mostrarNotificacao('Erro ao criar ZIP da pasta', 'error');
+        console.error('❌ Erro ao criar ZIP:', error);
+        alert('Erro ao criar ZIP da pasta: ' + error.message);
     }
-}
+};
 
 // ============================================
 // COPIAR LINK DIRETO
 // ============================================
-function copyDirectLink(link, event) {
+window.copyDirectLink = function(link, event) {
     event.stopPropagation();
     
     navigator.clipboard.writeText(link).then(() => {
-        mostrarNotificacao('Link copiado!', 'success');
+        console.log('✅ Link copiado!');
+        
+        // Feedback visual
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✓ Copiado';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
     }).catch(() => {
-        mostrarNotificacao('Erro ao copiar link', 'error');
+        alert('Erro ao copiar link');
     });
-}
+};
 
 // ============================================
-// DRAG & DROP MELHORADO
+// ADICIONAR CHECKBOXES E BOTÕES AOS ARQUIVOS
 // ============================================
-function setupEnhancedDragAndDrop() {
-    const items = document.querySelectorAll('.file-item[data-type="file"]');
+function addCheckboxesAndButtons() {
+    const fileItems = document.querySelectorAll('.file-item[data-type="file"]');
     
-    items.forEach(item => {
+    fileItems.forEach(item => {
+        // Verificar se já tem checkbox
+        if (item.querySelector('.file-checkbox')) return;
+        
+        const fileId = item.dataset.fileId;
         const directLink = item.dataset.directLink;
         
-        if (!directLink) return;
+        if (!fileId) return;
         
-        item.setAttribute('draggable', 'true');
+        // Criar checkbox
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'file-checkbox';
+        checkbox.dataset.fileId = fileId;
+        checkbox.style.cssText = 'margin-right: 12px; width: 18px; height: 18px; cursor: pointer; accent-color: var(--btn-primary);';
+        checkbox.onclick = (e) => {
+            e.stopPropagation();
+            toggleFileSelection(fileId, e);
+        };
         
-        item.addEventListener('dragstart', (e) => {
-            // Configurar dados para drag & drop
-            e.dataTransfer.effectAllowed = 'copy';
-            
-            // Link direto
-            e.dataTransfer.setData('text/uri-list', directLink);
-            e.dataTransfer.setData('text/plain', directLink);
-            
-            // Nome do arquivo
-            const fileName = item.dataset.fileName;
-            e.dataTransfer.setData('DownloadURL', `application/octet-stream:${fileName}:${directLink}`);
-            
-            item.style.opacity = '0.5';
-        });
+        // Inserir checkbox no início
+        item.insertBefore(checkbox, item.firstChild);
         
-        item.addEventListener('dragend', (e) => {
-            item.style.opacity = '1';
-        });
-    });
-}
-
-// ============================================
-// ATUALIZAR renderItems PARA INCLUIR NOVOS RECURSOS
-// ============================================
-function renderItemsEnhanced(items) {
-    const container = document.getElementById('fileList');
-    
-    if (!items || items.length === 0) {
-        container.innerHTML = `
-            <div style="text-align: center; padding: 4rem; color: var(--text-secondary);">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
-                <p>Nenhum item nesta pasta</p>
-            </div>
-        `;
-        return;
-    }
-    
-    const fragment = document.createDocumentFragment();
-    
-    items.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'file-item';
-        div.dataset.type = item.type;
-        div.dataset.fileName = item.name;
-        
-        if (item.type === 'file') {
-            div.dataset.fileId = item.google_drive_id;
-            div.dataset.directLink = item.directDownloadLink || '';
+        // Adicionar botão de link se tiver directLink
+        if (directLink) {
+            const linkBtn = document.createElement('button');
+            linkBtn.textContent = '🔗 Link';
+            linkBtn.title = 'Copiar link direto';
+            linkBtn.style.cssText = 'padding: 6px 12px; background: var(--btn-primary); border: none; border-radius: 4px; color: white; cursor: pointer; margin-left: auto;';
+            linkBtn.onclick = (e) => copyDirectLink(directLink, e);
             
-            // Checkbox para seleção
-            const checkbox = `
-                <input type="checkbox" 
-                       class="file-checkbox" 
-                       onclick="toggleFileSelection('${item.google_drive_id}', event)"
-                       style="margin-right: 12px; width: 18px; height: 18px; cursor: pointer;">
-            `;
-            
-            // Botões de ação
-            const actions = `
-                <div class="file-actions" style="display: flex; gap: 8px;">
-                    ${item.directDownloadLink ? `
-                        <button onclick="copyDirectLink('${item.directDownloadLink}', event)" 
-                                title="Copiar link direto"
-                                style="padding: 6px 12px; background: var(--btn-primary); border: none; border-radius: 4px; color: white; cursor: pointer;">
-                            🔗 Link
-                        </button>
-                    ` : ''}
-                    <button onclick="downloadFile('${item.path}')" 
-                            title="Baixar"
-                            style="padding: 6px 12px; background: var(--btn-secondary); border: none; border-radius: 4px; color: white; cursor: pointer;">
-                            ⬇️ Baixar
-                    </button>
-                </div>
-            `;
-            
-            div.innerHTML = `
-                ${checkbox}
-                <div class="file-icon">${getFileIcon(item.mimetype)}</div>
-                <div class="file-info">
-                    <div class="file-name">${escapeHtml(item.name)}</div>
-                    <div class="file-meta">
-                        <span class="file-size">${formatFileSize(item.size)}</span>
-                        <span class="file-date">${formatDate(item.updated_at)}</span>
-                    </div>
-                </div>
-                ${actions}
-            `;
-        } else {
-            // Pasta
-            div.innerHTML = `
-                <div class="file-icon">📁</div>
-                <div class="file-info">
-                    <div class="file-name">${escapeHtml(item.name)}</div>
-                    <div class="file-meta">
-                        <span class="file-type">PASTA</span>
-                        <span class="file-date">${formatDate(item.updated_at)}</span>
-                    </div>
-                </div>
-                <button onclick="zipFolder('${item.google_drive_id}', '${escapeHtml(item.name)}')" 
-                        title="Zipar pasta"
-                        style="padding: 6px 12px; background: var(--btn-primary); border: none; border-radius: 4px; color: white; cursor: pointer;">
-                    📦 ZIP
-                </button>
-            `;
-            
-            div.onclick = () => openFolder(item.path);
+            item.appendChild(linkBtn);
         }
-        
-        fragment.appendChild(div);
     });
     
-    container.innerHTML = '';
-    container.appendChild(fragment);
+    // Adicionar botão ZIP nas pastas
+    const folderItems = document.querySelectorAll('.file-item[data-type="folder"]');
     
-    // Configurar drag & drop melhorado
-    setupEnhancedDragAndDrop();
+    folderItems.forEach(item => {
+        if (item.querySelector('.zip-folder-btn')) return;
+        
+        const folderPath = item.dataset.path || '';
+        const folderName = item.dataset.fileName || '';
+        
+        // Tentar obter folderId do google_drive_id
+        const folderId = item.dataset.googleDriveId || '';
+        
+        if (!folderId) return;
+        
+        const zipBtn = document.createElement('button');
+        zipBtn.className = 'zip-folder-btn';
+        zipBtn.textContent = '📦 ZIP';
+        zipBtn.title = 'Zipar pasta';
+        zipBtn.style.cssText = 'padding: 6px 12px; background: var(--btn-primary); border: none; border-radius: 4px; color: white; cursor: pointer; margin-left: auto;';
+        zipBtn.onclick = (e) => {
+            e.stopPropagation();
+            zipFolder(folderId, folderName);
+        };
+        
+        item.appendChild(zipBtn);
+    });
 }
 
 // ============================================
@@ -287,63 +248,75 @@ function renderItemsEnhanced(items) {
 // ============================================
 function addZipButtonToHeader() {
     const header = document.querySelector('.header-content');
-    if (!header) return;
+    if (!header || document.getElementById('zipSelectedBtn')) return;
     
     // Botão ZIP (inicialmente oculto)
     const zipBtn = document.createElement('button');
     zipBtn.id = 'zipSelectedBtn';
     zipBtn.className = 'btn-icon';
-    zipBtn.style.display = 'none';
-    zipBtn.style.position = 'relative';
+    zipBtn.style.cssText = 'display: none; position: relative; margin-left: 12px;';
     zipBtn.innerHTML = `
-        📦 Zipar Selecionados
-        <span class="badge" style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 11px;">0</span>
+        📦 Zipar <span class="badge" style="position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 11px;">0</span>
     `;
     zipBtn.onclick = zipSelectedFiles;
     
     header.appendChild(zipBtn);
     
-    // Botão Limpar Seleção
+    // Botão Limpar
     const clearBtn = document.createElement('button');
     clearBtn.id = 'clearSelectionBtn';
     clearBtn.className = 'btn-icon';
-    clearBtn.style.display = 'none';
-    clearBtn.textContent = '❌ Limpar';
+    clearBtn.textContent = '✖';
+    clearBtn.title = 'Limpar seleção';
+    clearBtn.style.cssText = 'display: none; margin-left: 8px;';
     clearBtn.onclick = clearSelection;
     
     header.appendChild(clearBtn);
 }
 
 // ============================================
-// INICIALIZAR EXTENSÕES
+// OBSERVAR MUDANÇAS NO DOM
 // ============================================
-document.addEventListener('DOMContentLoaded', () => {
-    addZipButtonToHeader();
-    
-    // Substituir renderItems original
-    const originalRenderItems = window.renderItems;
-    window.renderItems = function(items) {
-        renderItemsEnhanced(items);
-    };
+const observer = new MutationObserver(() => {
+    addCheckboxesAndButtons();
 });
 
+function startObserving() {
+    const fileList = document.getElementById('fileList');
+    if (fileList) {
+        observer.observe(fileList, { 
+            childList: true, 
+            subtree: true 
+        });
+        
+        // Aplicar imediatamente
+        addCheckboxesAndButtons();
+    }
+}
+
 // ============================================
-// CSS ADICIONAL PARA SELEÇÃO
+// INICIALIZAR
 // ============================================
+function init() {
+    console.log('✅ Extensões de ZIP e Links inicializadas!');
+    addZipButtonToHeader();
+    startObserving();
+    addCheckboxesAndButtons();
+}
+
+// Aguardar DOM carregar
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    // DOM já carregado
+    setTimeout(init, 100);
+}
+
+// CSS adicional
 const style = document.createElement('style');
 style.textContent = `
-    .file-item.selected {
-        background: rgba(0, 123, 255, 0.1);
-        border-left: 3px solid var(--btn-primary);
-    }
-    
     .file-checkbox {
-        accent-color: var(--btn-primary);
-    }
-    
-    .file-actions button:hover {
-        opacity: 0.8;
-        transform: translateY(-2px);
+        flex-shrink: 0;
     }
     
     .badge {
@@ -354,7 +327,11 @@ style.textContent = `
         0%, 100% { transform: scale(1); }
         50% { transform: scale(1.1); }
     }
+    
+    .file-item button:hover {
+        opacity: 0.8;
+        transform: translateY(-2px);
+        transition: all 0.2s;
+    }
 `;
 document.head.appendChild(style);
-
-console.log('✅ Extensões de ZIP e Links carregadas!');
