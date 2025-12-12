@@ -103,7 +103,6 @@ async function verificarAutenticacao(req, res, next) {
     }
 }
 
-// Adicionar ANTES das rotas /api
 function verificarGoogleDrive(req, res, next) {
     if (!driveClient) {
         return res.status(503).json({ 
@@ -116,8 +115,31 @@ function verificarGoogleDrive(req, res, next) {
 }
 
 // ==========================================
-// WEBHOOK GOOGLE DRIVE (Sync em Tempo Real)
+// ROTAS PÚBLICAS (ANTES DO MIDDLEWARE)
 // ==========================================
+
+// HEALTH CHECK
+app.get('/health', async (req, res) => {
+    try {
+        const isGoogleAuth = await googleAuth.isAuthenticated();
+        const syncStatus = syncManager ? syncManager.getStatus() : null;
+        
+        res.json({
+            status: 'healthy',
+            google_drive: isGoogleAuth ? 'connected' : 'disconnected',
+            supabase: 'connected',
+            sync: syncStatus,
+            realtime: realtimeSync ? 'enabled' : 'disabled'
+        });
+    } catch (error) {
+        res.json({
+            status: 'unhealthy',
+            error: error.message
+        });
+    }
+});
+
+// WEBHOOK GOOGLE DRIVE (Sync em Tempo Real)
 app.post('/webhook/drive', express.raw({ type: 'application/json' }), async (req, res) => {
     try {
         if (realtimeSync) {
@@ -126,14 +148,11 @@ app.post('/webhook/drive', express.raw({ type: 'application/json' }), async (req
         res.status(200).send('OK');
     } catch (error) {
         console.error('❌ Erro no webhook:', error);
-        res.status(200).send('OK'); // Sempre retornar 200 para Google
+        res.status(200).send('OK');
     }
 });
 
-app.use('/api', verificarAutenticacao, verificarGoogleDrive);
-// ==========================================
 // ROTAS DE AUTENTICAÇÃO GOOGLE
-// ==========================================
 app.get('/auth/google', (req, res) => {
     try {
         const authUrl = googleAuth.getAuthUrl();
@@ -166,10 +185,8 @@ app.get('/auth/google/callback', async (req, res) => {
         syncManager = new SyncManager(driveClient, supabase);
         syncManager.startAutoSync(parseInt(process.env.SYNC_INTERVAL_MS) || 300000);
         
-        // Inicializar otimizadores
         zipManager = new ZipManager(driveClient);
         
-        // Configurar sync em tempo real
         const webhookUrl = process.env.WEBHOOK_URL || `${googleRedirectUri.split('/auth')[0]}/webhook/drive`;
         realtimeSync = new RealtimeSync(driveClient, supabase, syncManager);
         await realtimeSync.setupPushNotifications(webhookUrl);
@@ -263,34 +280,16 @@ app.get('/auth/google/status', async (req, res) => {
 });
 
 // ==========================================
-// HEALTH CHECK
+// MIDDLEWARE DE AUTENTICAÇÃO (APLICAR AQUI)
 // ==========================================
-app.get('/health', async (req, res) => {
-    try {
-        const isGoogleAuth = await googleAuth.isAuthenticated();
-        const syncStatus = syncManager ? syncManager.getStatus() : null;
-        
-        res.json({
-            status: 'healthy',
-            google_drive: isGoogleAuth ? 'connected' : 'disconnected',
-            supabase: 'connected',
-            sync: syncStatus,
-            realtime: realtimeSync ? 'enabled' : 'disabled'
-        });
-    } catch (error) {
-        res.json({
-            status: 'unhealthy',
-            error: error.message
-        });
-    }
-});
+app.use('/api', verificarAutenticacao);
 
 // ==========================================
-// API
+// ROTAS DA API
 // ==========================================
 
-// Listar pasta (COM LINKS OTIMIZADOS) - CORRIGIDO PARA GET
-app.get('/api/folders', verificarAutenticacao, verificarGoogleDrive, async (req, res) => {
+// Listar pasta (GET) - SEM verificarGoogleDrive
+app.get('/api/folders', async (req, res) => {
     try {
         const folderPath = req.query.path || 'Documentos/';
         console.log('📂 Listando:', folderPath);
@@ -304,8 +303,8 @@ app.get('/api/folders', verificarAutenticacao, verificarGoogleDrive, async (req,
         
         if (error) throw error;
         
-        // Otimizar links
-        const optimizedData = downloadOptimizer.generateOptimizedLinks(data);
+        const optimizedData = downloadOptimizer ? 
+            downloadOptimizer.generateOptimizedLinks(data) : data;
         
         const folders = optimizedData.filter(item => item.is_folder).map(item => ({
             name: item.name,
@@ -337,12 +336,12 @@ app.get('/api/folders', verificarAutenticacao, verificarGoogleDrive, async (req,
         });
     } catch (error) {
         console.error('❌ Erro ao listar:', error);
-        res.status(500).json({ error: 'Erro ao listar pasta' });
+        res.status(500).json({ error: 'Erro ao listar pasta', message: error.message });
     }
 });
 
 // Busca
-app.get('/api/search', verificarAutenticacao, async (req, res) => {
+app.get('/api/search', async (req, res) => {
     try {
         const searchTerm = req.query.q?.toLowerCase() || '';
         
@@ -360,7 +359,8 @@ app.get('/api/search', verificarAutenticacao, async (req, res) => {
         
         if (error) throw error;
         
-        const optimizedData = downloadOptimizer.generateOptimizedLinks(data);
+        const optimizedData = downloadOptimizer ? 
+            downloadOptimizer.generateOptimizedLinks(data) : data;
         
         const results = optimizedData.map(item => ({
             name: item.name,
@@ -383,8 +383,8 @@ app.get('/api/search', verificarAutenticacao, async (req, res) => {
     }
 });
 
-// Criar pasta
- app.post('/api/folders/create', verificarAutenticacao, verificarGoogleDrive, async (req, res) => {
+// Criar pasta (POST) - COM verificarGoogleDrive
+app.post('/api/folders', verificarGoogleDrive, async (req, res) => {
     try {
         const { path: parentPath, name } = req.body;
         
@@ -408,12 +408,12 @@ app.get('/api/search', verificarAutenticacao, async (req, res) => {
         res.status(201).json({ message: 'Pasta criada', name });
     } catch (error) {
         console.error('❌ Erro ao criar pasta:', error);
-        res.status(500).json({ error: 'Erro ao criar pasta' });
+        res.status(500).json({ error: 'Erro ao criar pasta', message: error.message });
     }
 });
 
-// Upload
-app.post('/api/upload', verificarAutenticacao, verificarGoogleDrive, upload.single('file'), async (req, res) => {
+// Upload (POST) - COM verificarGoogleDrive
+app.post('/api/upload', verificarGoogleDrive, upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Arquivo não enviado' });
@@ -450,8 +450,8 @@ app.post('/api/upload', verificarAutenticacao, verificarGoogleDrive, upload.sing
     }
 });
 
-// Download OTIMIZADO (redirect para link direto)
-app.get('/api/download', verificarAutenticacao, async (req, res) => {
+// Download - SEM verificarGoogleDrive
+app.get('/api/download', async (req, res) => {
     try {
         const filePath = req.query.path;
         
@@ -470,9 +470,16 @@ app.get('/api/download', verificarAutenticacao, async (req, res) => {
             return res.status(404).json({ error: 'Arquivo não encontrado' });
         }
         
-        // OTIMIZAÇÃO: Redirecionar para link direto do Google Drive
-        const directLink = downloadOptimizer.getDirectDownloadLink(fileInfo.google_drive_id);
-        res.redirect(directLink);
+        if (downloadOptimizer) {
+            const directLink = downloadOptimizer.getDirectDownloadLink(fileInfo.google_drive_id);
+            return res.redirect(directLink);
+        }
+        
+        if (fileInfo.web_content_link) {
+            return res.redirect(fileInfo.web_content_link);
+        }
+        
+        return res.status(404).json({ error: 'Link de download não disponível' });
         
     } catch (error) {
         console.error('❌ Erro no download:', error);
@@ -480,8 +487,8 @@ app.get('/api/download', verificarAutenticacao, async (req, res) => {
     }
 });
 
-// Deletar
-app.delete('/api/delete', verificarAutenticacao, verificarGoogleDrive, async (req, res) => {
+// Deletar - COM verificarGoogleDrive
+app.delete('/api/delete', verificarGoogleDrive, async (req, res) => {
     try {
         const { path: itemPath, type } = req.query;
         
@@ -510,8 +517,8 @@ app.delete('/api/delete', verificarAutenticacao, verificarGoogleDrive, async (re
     }
 });
 
-// Renomear
-app.put('/api/rename', verificarAutenticacao, verificarGoogleDrive, async (req, res) => {
+// Renomear - COM verificarGoogleDrive
+app.put('/api/rename', verificarGoogleDrive, async (req, res) => {
     try {
         const { oldPath, newName, type } = req.body;
         
@@ -541,7 +548,7 @@ app.put('/api/rename', verificarAutenticacao, verificarGoogleDrive, async (req, 
 });
 
 // Sincronizar manualmente
-app.post('/api/sync', verificarAutenticacao, async (req, res) => {
+app.post('/api/sync', async (req, res) => {
     try {
         if (!syncManager) {
             return res.status(503).json({ error: 'Sincronização não disponível' });
@@ -555,12 +562,8 @@ app.post('/api/sync', verificarAutenticacao, async (req, res) => {
     }
 });
 
-// ==========================================
-// ZIP DE ARQUIVOS
-// ==========================================
-
-// Criar ZIP de múltiplos arquivos
-app.post('/api/zip/files', verificarAutenticacao, verificarGoogleDrive, express.json(), async (req, res) => {
+// ZIP de múltiplos arquivos - COM verificarGoogleDrive
+app.post('/api/zip/files', verificarGoogleDrive, express.json(), async (req, res) => {
     try {
         const { fileIds, zipName } = req.body;
         
@@ -582,8 +585,8 @@ app.post('/api/zip/files', verificarAutenticacao, verificarGoogleDrive, express.
     }
 });
 
-// Criar ZIP de uma pasta
-app.post('/api/zip/folder', verificarAutenticacao, verificarGoogleDrive, express.json(), async (req, res) => {
+// ZIP de pasta - COM verificarGoogleDrive
+app.post('/api/zip/folder', verificarGoogleDrive, express.json(), async (req, res) => {
     try {
         const { folderId, folderName } = req.body;
         
@@ -644,7 +647,6 @@ app.listen(PORT, '0.0.0.0', async () => {
             
             zipManager = new ZipManager(driveClient);
             
-            // Configurar sync em tempo real
             const webhookUrl = process.env.WEBHOOK_URL || `${googleRedirectUri.split('/auth')[0]}/webhook/drive`;
             realtimeSync = new RealtimeSync(driveClient, supabase, syncManager);
             await realtimeSync.setupPushNotifications(webhookUrl);
